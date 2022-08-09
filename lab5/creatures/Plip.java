@@ -1,9 +1,6 @@
 package creatures;
 
-import huglife.Creature;
-import huglife.Direction;
-import huglife.Action;
-import huglife.Occupant;
+import huglife.*;
 
 import java.awt.Color;
 import java.util.ArrayDeque;
@@ -48,6 +45,16 @@ public class Plip extends Creature {
         this(1);
     }
 
+    @Override
+    public double energy() {
+        if (this.energy < 0) {
+            this.energy = 0;
+        } else if (this.energy > 2) {
+            this.energy = 2;
+        }
+        return this.energy;
+    }
+
     /**
      * Should return a color with red = 99, blue = 76, and green that varies
      * linearly based on the energy of the Plip. If the plip has zero energy,
@@ -57,7 +64,9 @@ public class Plip extends Creature {
      * that you get this exactly correct.
      */
     public Color color() {
-        g = 63;
+        r = 99;
+        g = (int) (96 * this.energy() + 63);
+        b = 76;
         return color(r, g, b);
     }
 
@@ -74,7 +83,7 @@ public class Plip extends Creature {
      * private static final variable. This is not required for this lab.
      */
     public void move() {
-        // TODO
+        this.energy -= 0.15;
     }
 
 
@@ -82,7 +91,7 @@ public class Plip extends Creature {
      * Plips gain 0.2 energy when staying due to photosynthesis.
      */
     public void stay() {
-        // TODO
+        this.energy += 0.2;
     }
 
     /**
@@ -91,40 +100,59 @@ public class Plip extends Creature {
      * Plip.
      */
     public Plip replicate() {
-        return this;
+        Plip babyPlip = new Plip(this.energy() / 2);
+        this.energy = this.energy() / 2;
+        return babyPlip;
     }
 
     /**
-     * Plips take exactly the following actions based on NEIGHBORS:
-     * 1. If no empty adjacent spaces, STAY.
-     * 2. Otherwise, if energy >= 1, REPLICATE towards an empty direction
-     * chosen at random.
-     * 3. Otherwise, if any Cloruses, MOVE with 50% probability,
-     * towards an empty direction chosen at random.
-     * 4. Otherwise, if nothing else, STAY
+     * Plips take exactly the following actions based on NEIGHBORS:<br>
+     * 1. If no empty adjacent spaces, STAY.<br>
+     * 2. Otherwise, if energy >= 1, REPLICATE towards an empty direction<br>
+     * chosen at random.<br>
+     * 3. Otherwise, if any Cloruses, MOVE with 50% probability,<br>
+     * towards an empty direction chosen at random.<br>
+     * 4. Otherwise, if nothing else, STAY.<br>
      * <p>
      * Returns an object of type Action. See Action.java for the
      * scoop on how Actions work. See SampleCreature.chooseAction()
      * for an example to follow.
      */
     public Action chooseAction(Map<Direction, Occupant> neighbors) {
-        // Rule 1
-        Deque<Direction> emptyNeighbors = new ArrayDeque<>();
+        // Below this line Plip checks its surroundings!
+        Deque<Direction> emptyNeighbors = new ArrayDeque<>();// Stores the empty squares around the Plip
         boolean anyClorus = false;
-        // TODO
-        // (Google: Enhanced for-loop over keys of NEIGHBORS?)
-        // for () {...}
 
-        if (false) { // FIXME
-            // TODO
+        for (Direction currentDirection : neighbors.keySet()) {
+            if (neighbors.get(currentDirection).name().equals("clorus")) {// check if there are Cloruses
+                anyClorus = true;
+            } else if (neighbors.get(currentDirection).name().equals("empty")) {//Add empty squares to Deque
+                emptyNeighbors.addLast(currentDirection);
+            }
         }
 
-        // Rule 2
+        // Below this line Plip starts to make action!
+
+        if (emptyNeighbors.isEmpty()) {//Rule 1
+            this.stay();
+            return new Action(Action.ActionType.STAY);
+
+        } else if (this.energy() >= 1.0) { //Rule 2
+            this.replicate();
+            return new Action(Action.ActionType.REPLICATE, emptyNeighbors.removeFirst());//TODO: randomAccess?
+
+        } else {
+            if (anyClorus && Math.random() <= 0.5) {// Rule 3
+                this.move();
+                return new Action(Action.ActionType.MOVE, emptyNeighbors.removeFirst());
+
+            } else {// Rule 4
+                this.stay();
+                return new Action(Action.ActionType.STAY);
+            }
+        }
+
         // HINT: randomEntry(emptyNeighbors)
 
-        // Rule 3
-
-        // Rule 4
-        return new Action(Action.ActionType.STAY);
     }
 }

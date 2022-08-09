@@ -105,12 +105,12 @@ public class SampleCreature extends Creature {
 
     /**
      * Sample Creatures take actions according to the following rules about
-     * NEIGHBORS:
-     * 1. With probability moveProbability, moves towards TOP if that space is empty.
-     * 2. Otherwise, with probability moveProbability, moves towards BOTTOM if that space is empty.
-     * 3. Otherwise, with probability moveProbability, moves towards LEFT if that space is empty.
-     * 4. Otherwise, with probability moveProbability, moves towards RIGHT if that space is empty.
-     * 5. Otherwise, stay.
+     * NEIGHBORS:<br>
+     * 1. With probability moveProbability, moves towards TOP if that space is empty.<br>
+     * 2. Otherwise, with probability moveProbability, moves towards BOTTOM if that space is empty.<br>
+     * 3. Otherwise, with probability moveProbability, moves towards LEFT if that space is empty.<br>
+     * 4. Otherwise, with probability moveProbability, moves towards RIGHT if that space is empty.<br>
+     * 5. Otherwise, stay.<br>
      * <p>
      * Returns the action selected.
      */

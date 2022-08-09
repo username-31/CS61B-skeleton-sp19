@@ -3,7 +3,7 @@ package huglife;
 import java.awt.Color;
 
 /**
- * @author Josh Hug
+ * @author Josh Hug<br>
  * Represents possible occupants of the grid world.
  * Intended for extension by:
  * Creature, Empty, and Impassible only.
