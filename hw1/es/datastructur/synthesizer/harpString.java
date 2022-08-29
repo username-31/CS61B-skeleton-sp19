@@ -1,31 +1,17 @@
 package es.datastructur.synthesizer;
 
-//Note: This file will not compile until you complete task 1 (BoundedQueue).
-public class GuitarString {
-    /**
-     * Constants. Do not change. In case you're curious, the keyword final
-     * means the values cannot be changed at runtime.
-     */
-    private static final int SR = 44100;      // Sampling Rate
-    private static final double DECAY = .996; // energy decay factor
-
-    /* Buffer for storing sound data. */
+public class harpString {
+    private static final int SR = 44100;
+    private static final double DECAY = .996;
     private BoundedQueue<Double> buffer;
 
-    /* Create a guitar string of the given frequency.  */
-    public GuitarString(double frequency) {
-        //  Create a buffer with capacity = SR / frequency. You'll need to
-        //       cast the result of this division operation into an int. For
-        //       better accuracy, use the Math.round() function before casting.
-        //       Your buffer should be initially filled with zeros.
+    public harpString(double frequency) {
         buffer = new ArrayRingBuffer<>((int) (Math.round(SR / frequency)));
         while (!buffer.isFull()) {
             buffer.enqueue(0.0);
         }
     }
 
-
-    /* Pluck the guitar string by replacing the buffer with white noise. */
     public void pluck() {
         // TODO: Dequeue everything in buffer, and replace with random numbers
         //       between -0.5 and 0.5. You can get such a number by using:
@@ -45,18 +31,15 @@ public class GuitarString {
         }
     }
 
-    /* Advance the simulation one time step by performing one iteration of
-     * the Karplus-Strong algorithm.
-     */
     public void tic() {
         // Dequeue the front sample and enqueue a new sample that is
         //       the average of the two multiplied by the DECAY factor.
         //       Do not call StdAudio.play().
         double newSample = DECAY * (buffer.dequeue() + buffer.peek()) / 2;
+        newSample = -1 * newSample;// Flipping the sign will produces harp-like sound.
         buffer.enqueue(newSample);
     }
 
-    /* Return the double at the front of the buffer. */
     public double sample() {
         // Return the correct thing.
         if (buffer.peek() == null) {
@@ -69,5 +52,5 @@ public class GuitarString {
 
         return buffer.peek();
     }
+
 }
-// TODO: Remove all comments that say TODO when you're done.
