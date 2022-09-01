@@ -9,32 +9,34 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
      * The length of the bucket array.
      */
     private int capacity;
-    private double loadFactor;
+    private final double loadFactor;
 
     /**
-     * The key-value pair.
+     * The linkedList-like key-value pair.
      */
-    private class entry {
-        private K key;
+    private static class entry<K, V> {
+        private final K key;
         private V val;
+        private entry<K, V> next;
 
-        private entry(K key, V val) {
+        public entry(K key, V val, entry<K, V> next) {
             this.key = key;
             this.val = val;
+            this.next = next;
         }
+
     }
 
-    private ArrayList<entry>[] bucket;
+    private entry<K, V>[] bucket;
+
+    private Queue<K> keyQueue = new LinkedList<>();
     private Set<K> keySet = new HashSet<>();
 
     public MyHashMap() {
         size = 0;
         capacity = 16;
         loadFactor = 0.75;
-        bucket = (ArrayList<entry>[]) new ArrayList[capacity];
-        for (int i = 0; i < capacity; i++) {//TODO: 这一块很重要！
-            bucket[i] = new ArrayList<>();
-        }
+        bucket = (entry<K, V>[]) new entry[capacity];
     }
 
     public MyHashMap(int initialSize) {
@@ -42,10 +44,8 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
         capacity = initialSize;
         size = 0;
         loadFactor = 0.75;
-        bucket = (ArrayList<entry>[]) new ArrayList[capacity];
-        for (int i = 0; i < capacity; i++) {
-            bucket[i] = new ArrayList<>();
-        }
+        bucket = (entry<K, V>[]) new entry[capacity];
+
     }
 
     public MyHashMap(int initialSize, double loadFactor) {
@@ -53,10 +53,8 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
         size = 0;
         capacity = initialSize;
         this.loadFactor = loadFactor;
-        bucket = (ArrayList<entry>[]) new ArrayList[capacity];
-        for (int i = 0; i < capacity; i++) {
-            bucket[i] = new ArrayList<>();
-        }
+        bucket = (entry<K, V>[]) new entry[capacity];
+
 
     }
 
@@ -71,8 +69,7 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
     }
 
     private int hash(K key, int modulus) {
-        int hash = (key.hashCode() & 0x7FFFFFFF) % (modulus);
-        return hash;
+        return (key.hashCode() & 0x7FFFFFFF) % (modulus);
     }
 
 
@@ -80,20 +77,21 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
     public void clear() {
         size = 0;
         capacity = 16;
-        bucket = (ArrayList<entry>[]) new ArrayList[capacity];
-        for (int i = 0; i < capacity; i++) {
-            bucket[i] = new ArrayList<>();
-        }
+        bucket = (entry<K, V>[]) new entry[capacity];
+
     }
 
     @Override
     public boolean containsKey(K key) {
         if (key == null) throw new RuntimeException("Null key is not allowed.");
-        if (!bucket[hash(key)].isEmpty()) {
-            for (entry e : bucket[hash(key)]) {// Runtime: O(N)
-                if (e.key.equals(key)) return true;
+        if (bucket[hash(key)] != null) {
+            entry<K, V> currEntry = bucket[hash(key)];
+            while (currEntry != null) {
+                if (currEntry.key.equals(key)) return true;
+                currEntry = currEntry.next;
             }
-        }
+            return false;
+        }// else bucket[hash(key)] is null
         return false;
 
     }
@@ -102,10 +100,12 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
     public V get(K key) {
         if (key == null) throw new RuntimeException("Null key is not allowed.");
         if (containsKey(key)) {
-            for (entry e : bucket[hash(key)]) {
-                if (e.key.equals(key)) return e.val;
+            entry<K, V> currEntry = bucket[hash(key)];
+            while (currEntry != null) {
+                if (currEntry.key.equals(key)) return currEntry.val;
+                currEntry = currEntry.next;
             }
-        }
+        }// else the map does not contain the key
         return null;
     }
 
@@ -115,9 +115,16 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
     }
 
     private void resize(int newCapacity) {
-        ArrayList<entry>[] largerBucket = (ArrayList<entry>[]) new ArrayList[newCapacity];
         //TODO
-        bucket = largerBucket;
+        entry<K, V>[] newBucket = (entry<K, V>[]) new entry[newCapacity];
+        for (int i = 0; i < capacity; i++) {
+            if (bucket[i] != null) {
+                if (bucket[i] != null) {
+                    newBucket[hash(bucket[i].key, newCapacity)] = bucket[i];
+                }
+            }
+        }
+        bucket = newBucket;
         this.capacity = newCapacity;
     }
 
@@ -128,15 +135,21 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
         }
 
         if (containsKey(key)) {
-            for (entry e : bucket[hash(key)]) {
-                if (e.key.equals(key)) {//Update the existing value.
-                    e.val = value;
+            entry<K, V> currEntry = bucket[hash(key)];
+            while (currEntry != null) {
+                if (currEntry.key.equals(key)) { // Update an existing value.
+                    currEntry.val = value;
+                    return;
+                } else {
+                    currEntry = currEntry.next;
                 }
             }
         } else {// Add a new entry.
-            bucket[hash(key)].add(new entry(key, value));
+            entry<K, V> oldEntry = bucket[hash(key)];
+            bucket[hash(key)] = new entry<>(key, value, oldEntry);
             this.size += 1;
             keySet.add(key);
+            keyQueue.add(key);
         }
 
     }
@@ -158,18 +171,33 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
 
     @Override
     public Iterator<K> iterator() {
-        //TODO
-        return null;
+        if (this.size() == 0) {
+            throw new RuntimeException("Call iterator on empty MyHashMap");
+        }
+        return new MyHashMapIterator();
+    }
+
+    private class MyHashMapIterator implements Iterator<K> {
+        public MyHashMapIterator() {
+        }
+
+        public K next() {
+            return keyQueue.poll();
+        }
+
+        public boolean hasNext() {
+            return !keyQueue.isEmpty();
+        }
     }
 
     public static void main(String[] args) {
         Map61B<String, Integer> m = new MyHashMap<>();
-//        m.put("OK", 1);
-//        m.put("OK", 2);
-//        m.put("O", 3);
-        System.out.println(m.containsKey("OK"));
-        System.out.println(m.containsKey("O"));
-        System.out.println(m.containsKey("OB"));
-    }
+        for (int i = 0; i < 16; i++) {
+            m.put("OK[" + i + "]", i);
+        }
 
+        for ( int i = 0; i < 16; i++) {
+            System.out.println(m.get("OK[" + i + "]"));
+        }
+    }
 }
